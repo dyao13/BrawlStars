@@ -179,4 +179,4 @@ for link in links:
 
     df = pd.concat([df, data])
 
-df.to_csv('output.csv', index=False)
+df.to_csv('./output/output.csv', index=False)
