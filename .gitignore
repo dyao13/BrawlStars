@@ -1,0 +1,5 @@
+*.csv
+*.env
+*.venv
+*.html
+*.mjs
