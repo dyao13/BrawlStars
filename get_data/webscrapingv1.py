@@ -166,7 +166,7 @@ links = []
 links.append('https://liquipedia.net/brawlstars/Esports_City_Fest_Andorra_Invitational')
 links.append('https://liquipedia.net/brawlstars/CBBS/Season_4')
 links.append('https://liquipedia.net/brawlstars/Brawl_Stars_World_Finals/2023')
-links.append('https://liquipedia.net/brawlstars/Brawl_Stars_World_Finals/2022')
+links.append('https://liquipedia.net/brawlstars/Brawl_Stars_Championship/2023/Last_Chance_Qualifier')
 
 df = pd.DataFrame({'Mode': [], 'Map': [], 'Blue Score': [], 'Red Score': [], 'First': [], 
                     'Blue Pick 1': [], 'Blue Pick 2': [], 'Blue Pick 3': [], 

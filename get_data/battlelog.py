@@ -5,71 +5,84 @@ import io
 import pandas as pd
 from dotenv import load_dotenv
 
-original_stdout = sys.stdout
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+def log_battles(tag):
+    original_stdout = sys.stdout
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-load_dotenv()
-api_token = os.getenv('API_TOKEN')
+    if os.path.exists('./output/battlelog.csv'):
+        old_df = pd.read_csv('./output/battlelog.csv')
+        old_battleTimes = set(old_df['battleTime'])
+    else:
+        old_df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 'isRanked': [], 'result': [], 'myBrawler': [], 
+                            'Player 1,1': [], 'Player 1,2': [], 'Player 1,3': [], 
+                            'Player 2,1': [], 'Player 2,2': [], 'Player 2,3': []})
+        old_battleTimes = set(old_df['battleTime'])
 
-client = brawlstats.Client(api_token)
+    load_dotenv()
+    api_token = os.getenv('API_TOKEN')
 
-battlelogs = client.get_battle_logs('8CCYQG9P')
+    client = brawlstats.Client(api_token)
 
-df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 'isRanked': [], 'result': [], 
-                   'Player 1,1': [], 'Player 1,2': [], 'Player 1,3': [], 
-                   'Player 2,1': [], 'Player 2,2': [], 'Player 2,3': []})
-for battlelog in battlelogs:
-    battleTime = battlelog['battleTime']
-    event = battlelog['event']
-    battle = battlelog['battle']
+    battlelogs = client.get_battle_logs(tag)
 
-    mode = event['mode']
-    map = event['map']
+    df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 'isRanked': [], 'result': [], 'myBrawler': [], 
+                    'Player 1,1': [], 'Player 1,2': [], 'Player 1,3': [], 
+                    'Player 2,1': [], 'Player 2,2': [], 'Player 2,3': []})
 
-    isRanked = battle['type']
-    result = battle['result']
-    teams = battle['teams']
+    for battlelog in battlelogs:
+        battleTime = battlelog['battleTime']
 
-    team1 = []
-    team2 = []
+        if battleTime in old_battleTimes:
+            continue
 
-    for player in teams[0]:
-        team1.append(player['brawler']['name'])
-    
-    for player in teams[1]:
-        team2.append(player['brawler']['name'])
+        old_battleTimes.add(battleTime)
 
-    data = pd.DataFrame({'battleTime': [battleTime], 'mode': [mode], 'map': [map], 
-                         'isRanked': [isRanked], 'result': [result], 
-                         'Player 1,1': [team1[0]], 'Player 1,2': [team1[1]], 'Player 1,3': [team1[2]], 
-                         'Player 2,1': [team2[0]], 'Player 2,2': [team2[1]], 'Player 2,3': [team2[2]]})
-    
-    df = pd.concat([df, data])
+        event = battlelog['event']
+        battle = battlelog['battle']
 
-df.to_csv('./output/battlelog.csv', index=False)
+        mode = event['mode']
+        map = event['map']
 
-print(df)
+        isRanked = battle['type']
 
-# def log_battle_logs():
-#     try:
-#         # Get battle logs for a specific player
-#         battlelogs = client.get_battle_logs('8CCYQG9P')
+        if not isRanked == 'soloRanked':
+            continue
 
-#         # Open a log file and write the logs
-#         with open('battle_logs.txt', 'a', encoding='utf-8') as log_file:
-#             log_file.write(f"\n--- Log Time: {datetime.now()} ---\n")
+        result = battle['result']
+        teams = battle['teams']
 
-#             for battle in battlelogs:
-#                 log_file.write(str(battle) + '\n')
+        team1 = []
+        team2 = []
 
-#         print(f"Logged battle logs at {datetime.now()}")
+        for player in teams[0]:
+            team1.append(player['brawler']['name'])
 
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
+            if player['tag'] == '#' + tag:
+                myBrawler = player['brawler']['name']
+        
+        for player in teams[1]:
+            team2.append(player['brawler']['name'])
 
-# # Run the logging process every 30 minutes
-# while True:
-#     log_battle_logs()
-    
-#     # Sleep for 30 minutes (30 * 60 seconds)
-#     time.sleep(1800)
+            if player['tag'] == '#' + tag:
+                myBrawler = player['brawler']['name']
+
+        data = pd.DataFrame({'battleTime': [battleTime], 'mode': [mode], 'map': [map],
+                            'isRanked': [isRanked], 'result': [result], 'myBrawler': [myBrawler], 
+                            'Player 1,1': [team1[0]], 'Player 1,2': [team1[1]], 'Player 1,3': [team1[2]], 
+                            'Player 2,1': [team2[0]], 'Player 2,2': [team2[1]], 'Player 2,3': [team2[2]]})
+        
+        df = pd.concat([df, data])
+
+    df = pd.concat([df, old_df], ignore_index=True)
+
+    return df
+
+def main():
+    tag = '8CCYQG9P'
+    df = log_battles(tag)
+    df.to_csv('./output/battlelog.csv', index=False)
+
+    print(df)
+
+if __name__ == '__main__':
+    main()
