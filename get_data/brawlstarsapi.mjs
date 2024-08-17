@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
-dotenv.config();
-
 import fetch from 'node-fetch';
 
+dotenv.config();
 const token = process.env.API_TOKEN;
 
 fetch('https://api.brawlstars.com/v1/players/%238CCYQG9P', {
