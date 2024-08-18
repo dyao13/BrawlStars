@@ -29,18 +29,18 @@ def log_battles(tag):
 
     if os.path.exists(file_path):
         old_df = pd.read_csv(file_path)
-        old_battleTimes = set(old_df['battleTime'])
+        old_battleTimes = set(old_df['Battle Time'])
     else:
-        old_df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                               'type': [], 'result': [], 
+        old_df = pd.DataFrame({'Battle Time': [], 'Mode': [], 'Map': [], 
+                               'Type': [], 'Result': [], 
                                'My Tag': [], 'My Brawler': [], 
                                'Tag 1,1': [], 'Brawler 1,1': [], 
                                'Tag 1,2': [], 'Brawler 1,2': [], 
                                'Tag 1,3': [], 'Brawler 1,3': [], 
                                'Tag 2,1': [], 'Brawler 2,1': [], 
-                               'Tag 2,2': [], 'Player 2,2': [], 
-                               'Tag 2,3': [], 'Player 2,3': []})
-        old_battleTimes = set(old_df['battleTime'])
+                               'Tag 2,2': [], 'Brawler 2,2': [], 
+                               'Tag 2,3': [], 'Brawler 2,3': []})
+        old_battleTimes = set(old_df['Battle Time'])
 
     load_dotenv()
     api_token = os.getenv('API_TOKEN')
@@ -49,15 +49,15 @@ def log_battles(tag):
 
     battlelogs = client.get_battle_logs(tag)
 
-    df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                        'type': [], 'result': [], 
+    df = pd.DataFrame({'Battle Time': [], 'Mode': [], 'Map': [], 
+                        'Type': [], 'Result': [], 
                         'My Tag': [], 'My Brawler': [], 
                         'Tag 1,1': [], 'Brawler 1,1': [], 
                         'Tag 1,2': [], 'Brawler 1,2': [], 
                         'Tag 1,3': [], 'Brawler 1,3': [], 
                         'Tag 2,1': [], 'Brawler 2,1': [], 
-                        'Tag 2,2': [], 'Player 2,2': [], 
-                        'Tag 2,3': [], 'Player 2,3': []})
+                        'Tag 2,2': [], 'Brawler 2,2': [], 
+                        'Tag 2,3': [], 'Brawler 2,3': []})
 
     for battlelog in battlelogs:
         battleTime = battlelog['battleTime']
@@ -108,15 +108,15 @@ def log_battles(tag):
             if player['tag'] == '#' + tag:
                 myBrawler = player['brawler']['name']
 
-        data = pd.DataFrame({'battleTime': [battleTime], 'mode': [mode], 'map': [game_map],
-                            'type': [isRanked], 'result': [result], 
+        data = pd.DataFrame({'Battle Time': [battleTime], 'Mode': [mode], 'Map': [game_map],
+                            'Type': [isRanked], 'Result': [result], 
                             'My Tag': tag, 'My Brawler': [myBrawler], 
                             'Tag 1,1': [tags1[0]], 'Brawler 1,1': [team1[0]], 
                             'Tag 1,2': [tags1[1]], 'Brawler 1,2': [team1[1]], 
                             'Tag 1,3': [tags1[2]], 'Brawler 1,3': [team1[2]], 
                             'Tag 2,1': [tags2[0]], 'Brawler 2,1': [team2[0]], 
-                            'Tag 2,2': [tags2[1]], 'Player 2,2': [team2[1]], 
-                            'Tag 2,3': [tags2[2]], 'Player 2,3': [team2[2]]})
+                            'Tag 2,2': [tags2[1]], 'Brawler 2,2': [team2[1]], 
+                            'Tag 2,3': [tags2[2]], 'Brawler 2,3': [team2[2]]})
         
         df = pd.concat([df, data])
 
@@ -135,15 +135,15 @@ def get_unique_battles():
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
     else:
-        df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                           'type': [], 'result': [], 
+        df = pd.DataFrame({'Battle Time': [], 'Mode': [], 'Map': [], 
+                           'Type': [], 'Result': [], 
                            'My Tag': [], 'My Brawler': [], 
                            'Tag 1,1': [], 'Brawler 1,1': [], 
                            'Tag 1,2': [], 'Brawler 1,2': [], 
                            'Tag 1,3': [], 'Brawler 1,3': [], 
                            'Tag 2,1': [], 'Brawler 2,1': [], 
-                           'Tag 2,2': [], 'Player 2,2': [], 
-                           'Tag 2,3': [], 'Player 2,3': []})
+                           'Tag 2,2': [], 'Brawler 2,2': [], 
+                           'Tag 2,3': [], 'Brawler 2,3': []})
 
     files = []
 
@@ -168,14 +168,14 @@ def get_unique_battles():
     for i in range(len(player1)):
             players.append([player1[i], player2[i], player3[i], player4[i], player5[i], player6[i]])
 
-    old_times = set(df['battleTime'])
+    old_times = set(df['Battle Time'])
     old_players = set(frozenset(x) for x in players)
 
     for j in tqdm(range(len(files))):
         file = files[j]
         battles = pd.read_csv(file)
 
-        times = battles['battleTime']
+        times = battles['Battle Time']
         
         player1 = battles['Tag 1,1']
         player2 = battles['Tag 1,2']
