@@ -32,7 +32,8 @@ def log_battles(tag):
         old_battleTimes = set(old_df['battleTime'])
     else:
         old_df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                               'type': [], 'result': [], 'My Brawler': [], 
+                               'type': [], 'result': [], 
+                               'My Tag': [], 'My Brawler': [], 
                                'Tag 1,1': [], 'Brawler 1,1': [], 
                                'Tag 1,2': [], 'Brawler 1,2': [], 
                                'Tag 1,3': [], 'Brawler 1,3': [], 
@@ -49,7 +50,8 @@ def log_battles(tag):
     battlelogs = client.get_battle_logs(tag)
 
     df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                        'type': [], 'result': [], 'My Brawler': [], 
+                        'type': [], 'result': [], 
+                        'My Tag': [], 'My Brawler': [], 
                         'Tag 1,1': [], 'Brawler 1,1': [], 
                         'Tag 1,2': [], 'Brawler 1,2': [], 
                         'Tag 1,3': [], 'Brawler 1,3': [], 
@@ -107,7 +109,8 @@ def log_battles(tag):
                 myBrawler = player['brawler']['name']
 
         data = pd.DataFrame({'battleTime': [battleTime], 'mode': [mode], 'map': [game_map],
-                            'type': [isRanked], 'result': [result], 'My Brawler': [myBrawler], 
+                            'type': [isRanked], 'result': [result], 
+                            'My Tag': tag, 'My Brawler': [myBrawler], 
                             'Tag 1,1': [tags1[0]], 'Brawler 1,1': [team1[0]], 
                             'Tag 1,2': [tags1[1]], 'Brawler 1,2': [team1[1]], 
                             'Tag 1,3': [tags1[2]], 'Brawler 1,3': [team1[2]], 
@@ -122,6 +125,9 @@ def log_battles(tag):
     return df
 
 def get_unique_battles():
+    load_dotenv()
+    my_tag = os.getenv('MY_TAG')
+
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, 'battles.csv')
@@ -130,7 +136,8 @@ def get_unique_battles():
         df = pd.read_csv(file_path)
     else:
         df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
-                           'type': [], 'result': [], 'My Brawler': [], 
+                           'type': [], 'result': [], 
+                           'My Tag': [], 'My Brawler': [], 
                            'Tag 1,1': [], 'Brawler 1,1': [], 
                            'Tag 1,2': [], 'Brawler 1,2': [], 
                            'Tag 1,3': [], 'Brawler 1,3': [], 
@@ -143,6 +150,9 @@ def get_unique_battles():
     pattern = re.compile(r'battlelog\.csv$')
 
     for file in os.listdir(output_dir):
+        if file.split('battlelog')[0] == my_tag:
+            continue
+
         if pattern.search(file):
             files.append(os.path.join(output_dir, file))
     
@@ -196,10 +206,10 @@ def main():
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
     os.makedirs(output_dir, exist_ok=True)
 
-    tags = []
+    load_dotenv()
+    my_tag = os.getenv('MY_TAG')
 
-    tags.append('8CCYQG9P')
-    tags.append('Y8PLP8VY')
+    tags = [my_tag]
 
     t200 = get_rankings()
 
