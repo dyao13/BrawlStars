@@ -2,6 +2,7 @@ import brawlstats
 import os
 import sys
 import io
+import re
 import pandas as pd
 from dotenv import load_dotenv
 from tqdm import tqdm
@@ -120,8 +121,76 @@ def log_battles(tag):
 
     return df
 
+def get_unique_battles():
+    output_dir = os.path.join(os.path.dirname(__file__), 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    file_path = os.path.join(output_dir, 'battles.csv')
+
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.DataFrame({'battleTime': [], 'mode': [], 'map': [], 
+                           'type': [], 'result': [], 'My Brawler': [], 
+                           'Tag 1,1': [], 'Brawler 1,1': [], 
+                           'Tag 1,2': [], 'Brawler 1,2': [], 
+                           'Tag 1,3': [], 'Brawler 1,3': [], 
+                           'Tag 2,1': [], 'Brawler 2,1': [], 
+                           'Tag 2,2': [], 'Player 2,2': [], 
+                           'Tag 2,3': [], 'Player 2,3': []})
+
+    files = []
+
+    pattern = re.compile(r'battlelog\.csv$')
+
+    for file in os.listdir(output_dir):
+        if pattern.search(file):
+            files.append(os.path.join(output_dir, file))
+    
+    player1 = df['Tag 1,1']
+    player2 = df['Tag 1,2']
+    player3 = df['Tag 1,3']
+    player4 = df['Tag 2,1']
+    player5 = df['Tag 2,2']
+    player6 = df['Tag 2,3']
+
+    players = []
+
+    for i in range(len(player1)):
+            players.append([player1[i], player2[i], player3[i], player4[i], player5[i], player6[i]])
+
+    old_times = set(df['battleTime'])
+    old_players = set(frozenset(x) for x in players)
+
+    for j in tqdm(range(len(files))):
+        file = files[j]
+        battles = pd.read_csv(file)
+
+        times = battles['battleTime']
+        
+        player1 = battles['Tag 1,1']
+        player2 = battles['Tag 1,2']
+        player3 = battles['Tag 1,3']
+        player4 = battles['Tag 2,1']
+        player5 = battles['Tag 2,2']
+        player6 = battles['Tag 2,3']
+
+        players = []
+
+        for i in range(len(player1)):
+            players.append(frozenset([player1[i], player2[i], player3[i], player4[i], player5[i], player6[i]]))
+        
+        for i in range(len(times)):
+            if times[i] in old_times and players[i] in old_players:
+                continue
+        
+            df = pd.concat([df, pd.DataFrame([battles.iloc[i]])], ignore_index=True)
+
+            old_times.add(times[i])
+            old_players.add(frozenset(players[i]))
+    
+    return df
+
 def main():
-    original_stdout = sys.stdout
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
@@ -144,6 +213,9 @@ def main():
         if len(df.index) > 0:
             file_path = os.path.join(output_dir, tag + 'battlelog.csv')
             df.to_csv(file_path, index=False)
+
+    df = get_unique_battles()
+    df.to_csv(os.path.join(output_dir, 'battles.csv'), index=False)
 
 if __name__ == '__main__':
     main()
