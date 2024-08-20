@@ -1,5 +1,6 @@
 import os
 import threading
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -26,7 +27,7 @@ class Engine:
             self.against_winrates.iloc[i] = self.against_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
             self.with_winrates.iloc[i] = self.with_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
     
-        self.brawlers = self.winrates['Name'].to_numpy()
+        self.brawlers = self.winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
         
     def evaluation(self, node):
         value = 0
@@ -44,16 +45,25 @@ class Engine:
 
         return value
 
-    def minimax(self, node, depth, alpha, beta, isMaximizer, max_depth):
-        if depth == 0:
+    def minimax(self, node, depth, alpha, beta, max_depth):
+        if depth == 0 or (len(node.team1) == 3 and len(node.team2) == 3):
             return [], self.evaluation(node)
-        
+
+        brawlers = self.brawlers
+
         if depth == max_depth:
-            brawlers = tqdm(self.brawlers)
+            brawlers = tqdm(brawlers)
+
+        num1 = len(node.team1)
+        num2 = len(node.team2)
+
+        if (num1 == 0 and num2 == 0) or (num1 == 1 and num2 == 2) or (num1 == 2 and num2 == 2):
+            isMaximizer = True
         else:
-            brawlers = self.brawlers
+            isMaximizer = False
 
         best_pick = None
+        main_line = []
 
         if isMaximizer:
             value = -float('inf')
@@ -61,17 +71,17 @@ class Engine:
             for brawler in brawlers:
                 if brawler not in node.bans1 and brawler not in node.bans2 and brawler not in node.team1 and brawler not in node.team2:
                     node.team1.append(brawler)
-                    
-                    next_line, new_value = self.minimax(node, depth-1, alpha, beta, False, max_depth)
+                    next_line, new_value = self.minimax(node, depth-1, alpha, beta, max_depth)
                     node.team1.remove(brawler)
 
                     if new_value > value:
                         value = new_value
                         best_pick = brawler
+                        main_line = [best_pick] + next_line
                         
                     alpha = max(alpha, value)
 
-                    if value > beta:
+                    if value >= beta:
                         break 
             
         else:
@@ -80,30 +90,55 @@ class Engine:
             for brawler in brawlers:
                 if brawler not in node.bans1 and brawler not in node.bans2 and brawler not in node.team1 and brawler not in node.team2:
                     node.team2.append(brawler)
-                    
-                    next_line, new_value = self.minimax(node, depth-1, alpha, beta, True, max_depth)
+                    next_line, new_value = self.minimax(node, depth-1, alpha, beta, max_depth)
                     node.team2.remove(brawler)
 
                     if new_value < value:
                         value = new_value
                         best_pick = brawler
+                        main_line = [best_pick] + next_line
 
                     beta = min(beta, value)
 
-                    if value < alpha:
+                    if value <= alpha:
                         break
 
-        return [best_pick] + next_line, value
+        return main_line, value
+
+    def get_main_line(self, node, depth):
+        num1 = len(node.team1)
+        num2 = len(node.team2)
+
+        if num1 > 3 or num2 > 3 or abs(num1 - num2) > 2:
+            return -float('inf')
+
+        line = []
+
+        if num1 > 0:
+            line.append(node.team1[0])
+        if num2 > 0:
+            line.append(node.team2[0])
+        if num2 > 1:
+            line.append(node.team2[1])
+        if num1 > 1:
+            line.append(node.team1[1])
+        if num1 > 2:
+            line.append(node.team1[2])
+        if num2 > 2:
+            line.append(node.team2[2])
+
+        main_line, value = self.minimax(node, depth, -float('inf'), float('inf'), depth)
+            
+        return line + main_line, value
 
 def main():
     engine = Engine()
+    node = Node()
 
-    engine.node.ban1 = ['PIPER', 'ANGELO', 'MANDY']
-    engine.node.ban2 = ['TICK', 'SPROUT', 'GROM']
+    node.ban1 = ['PIPER', 'ANGELO', 'MANDY']
+    node.ban2 = ['TICK', 'SPROUT', 'GROM']
 
-    engine.node.team1 = ['GENE']
-
-    main_line, value = engine.minimax(engine.node, 5, -float('inf'), float('inf'), False, 5)
+    main_line, value = engine.get_main_line(node, 6)
 
     print(main_line, value)
 
