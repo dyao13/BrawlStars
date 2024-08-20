@@ -19,15 +19,33 @@ class Engine:
         get_data_dir = os.path.join(parent_dir, 'do_analysis')
         data_dir = os.path.join(get_data_dir, 'output')
 
-        self.with_winrates = pd.read_csv(os.path.join(data_dir, 'with_winrates.csv'), index_col=0)
-        self.against_winrates = pd.read_csv(os.path.join(data_dir, 'against_winrates.csv'), index_col=0)
-        self.winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'))
+        # self.with_winrates = pd.read_csv(os.path.join(data_dir, 'with_winrates.csv'), index_col=0)
+        # self.against_winrates = pd.read_csv(os.path.join(data_dir, 'against_winrates.csv'), index_col=0)
+        
+        with_wins = pd.read_csv(os.path.join(data_dir, 'with_wins.csv'), index_col=0)
+        with_games = pd.read_csv(os.path.join(data_dir, 'with_games.csv'), index_col=0)
+        against_wins = pd.read_csv(os.path.join(data_dir, 'against_wins.csv'), index_col=0)
+        against_games = pd.read_csv(os.path.join(data_dir, 'against_games.csv'), index_col=0)
 
-        for i in range(len(self.with_winrates)):
-            self.against_winrates.iloc[i] = self.against_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
-            self.with_winrates.iloc[i] = self.with_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
+        with_wins = with_wins.fillna(0)
+        with_games = with_games.fillna(0)
+        against_wins = against_wins.fillna(0)
+        against_games = against_games.fillna(0)
+
+        self.with_winrates = (with_wins + 1) / (with_games + 2)
+        self.against_winrates = (against_wins + 1) / (against_games + 2)
+
+        winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'))
+
+        winrates = winrates.fillna(0)
+        
+        winrates['Win Rates'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
+
+        # for i in range(len(self.with_winrates)):
+        #     self.against_winrates.iloc[i] = self.against_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
+        #     self.with_winrates.iloc[i] = self.with_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
     
-        self.brawlers = self.winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
+        self.brawlers = winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
         
     def evaluation(self, node):
         value = 0
@@ -134,9 +152,6 @@ class Engine:
 def main():
     engine = Engine()
     node = Node()
-
-    node.ban1 = ['PIPER', 'ANGELO', 'MANDY']
-    node.ban2 = ['TICK', 'SPROUT', 'GROM']
 
     main_line, value = engine.get_main_line(node, 6)
 
