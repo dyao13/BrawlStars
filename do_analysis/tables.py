@@ -1,5 +1,7 @@
 import os
 import engine
+import ast
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from itertools import combinations
@@ -66,25 +68,42 @@ def save_table(engine, brawlers, depth):
 def save_teams(brawlers, n, file_path):
     with open(os.path.join(file_path, 'teams' + str(n) + '.txt'), 'w') as output_file:
         for subset in tqdm(list(combinations(brawlers, n))):
-            output_file.write(f"{list(get_teams(subset))}\n")
+            for teams in get_teams(subset):
+                output_file.write(f"{teams}\n")
 
 def main():
     current_dir = os.path.dirname(__file__)
     output_dir = os.path.join(current_dir, 'output')
     os.makedirs(output_dir, exist_ok=True)
 
-    obj = engine.Engine()
-    brawlers = obj.get_brawlers()
+    # obj = engine.Engine()
+    # brawlers = obj.get_brawlers()
 
-    save_bans(brawlers)
+    # save_bans(brawlers)
 
-    # for ban in tqdm(bans):
-    #     available_brawlers = list(set(brawlers) - set(ban))
+    # if not os.path.isfile(os.path.join(output_dir, 'teams4.txt')):
+    #     save_teams(available_brawlers, 4, os.path.join(output_dir, 'teams4.txt'))
+    # if not os.path.isfile(os.path.join(output_dir, 'teams5.txt')):
+    #     save_teams(available_brawlers, 5, os.path.join(output_dir, 'teams5.txt'))
 
-    #     if not os.path.isfile(os.path.join(output_dir, str(ban) + 'teams4.txt')):
-    #         save_teams(available_brawlers, 4, os.path.join(output_dir, str(ban) + 'teams4.txt'))
-    #     if not os.path.isfile(os.path.join(output_dir, str(ban) + 'teams5.txt')):
-    #         save_teams(available_brawlers, 5, os.path.join(output_dir, str(ban) + 'teams5.txt'))
+    teams = []
+
+    with open(os.path.join(output_dir, 'teams5.txt'), 'r') as input_file:
+        for i, line in tqdm(enumerate(input_file)):
+            if i > 10:
+                break
+
+            data = ast.literal_eval(line.strip())
+            teams.append(data)
+        
+    print(teams)
+
+    # obj = engine.Engine()
+    # node = engine.Node()
+
+    # for team in teams:
+    #     node.team1 = 
+        
 
 if __name__ == '__main__':
     main()

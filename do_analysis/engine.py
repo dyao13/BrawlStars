@@ -4,7 +4,9 @@ import pandas as pd
 from tqdm import tqdm
 
 class Node:
-    def __init__(self, bans1=[], bans2=[], team1=[], team2=[]):
+    def __init__(self, map=None, bans1=[], bans2=[], team1=[], team2=[]):
+        self.map = map
+
         self.bans1 = bans1
         self.bans2 = bans2
 
@@ -18,36 +20,46 @@ class Engine:
         get_data_dir = os.path.join(parent_dir, 'do_analysis')
         data_dir = os.path.join(get_data_dir, 'output')
 
-        
         with_wins = pd.read_csv(os.path.join(data_dir, 'with_wins.csv'), index_col=0)
         with_games = pd.read_csv(os.path.join(data_dir, 'with_games.csv'), index_col=0)
         against_wins = pd.read_csv(os.path.join(data_dir, 'against_wins.csv'), index_col=0)
         against_games = pd.read_csv(os.path.join(data_dir, 'against_games.csv'), index_col=0)
+        winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'))
 
         with_wins = with_wins.fillna(0)
         with_games = with_games.fillna(0)
         against_wins = against_wins.fillna(0)
         against_games = against_games.fillna(0)
+        winrates = winrates.fillna(0)
+
+        winrates['Win Rates'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
+    
+        self.data_dir = data_dir
 
         self.with_winrates = (with_wins + 1) / (with_games + 2)
         self.against_winrates = (against_wins + 1) / (against_games + 2)
 
-        winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'))
-
-        winrates = winrates.fillna(0)
-        
-        winrates['Win Rates'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
-    
         self.brawlers = winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
-        
-    def get_brawlers(self):
-        return self.brawlers
+
+        if os.path.exists(os.path.join(data_dir, 'first_pick.txt')):
+            self.first_pick = open(os.path.join(data_dir, 'first_pick.txt'), 'r').readline()
+        else:
+            self.first_pick = None
+    
+    def get_data_dir(self):
+        return self.data_dir
     
     def get_with_winrates(self):
         return self.with_winrates
 
     def get_against_winrates(self):
         return self.against_winrates
+    
+    def get_brawlers(self):
+        return self.brawlers
+
+    def get_first_pick(self):
+        return self.first_pick
     
     def evaluation(self, node):
         value = 0
@@ -69,7 +81,7 @@ class Engine:
         if depth == 0 or (len(node.team1) == 3 and len(node.team2) == 3):
             return [], self.evaluation(node)
 
-        brawlers = self.brawlers
+        brawlers = self.brawlers              
 
         if depth == max_depth:
             brawlers = tqdm(brawlers)
@@ -151,12 +163,46 @@ class Engine:
             
         return line + main_line, value
 
+    def make_teams(self, line):
+        n = len(line)
+
+        team1 = []
+        team2 = []
+
+        if n > 0:
+            team1.append(line[0])
+        if n > 1:
+            team2.append(line[1])
+        if n > 2:
+            team2.append(line[2])
+        if n > 3:
+            team1.append(line[3])
+        if n > 4:
+            team1.append(line[4])
+        if n > 5:
+            team2.append(line[5])
+
+        return team1, team2
+
+    def quick_run(self, node):
+        main_line, value = self.get_main_line(node, 4)
+        team1, team2 = self.make_teams(main_line)
+
+        node.team1 = team1
+        node.team2 = team2
+
+        main_line, value = self.get_main_line(node, 6)
+
+        return main_line, value
+
 def main():
     engine = Engine()
     node = Node()
 
-    main_line, value = engine.get_main_line(node, 6)
-    print(main_line, value)
+    main_line, value = engine.quick_run(node)
+
+    print(main_line)
+    print(value)
 
 if __name__ == '__main__':
     main()
