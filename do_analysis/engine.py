@@ -1,5 +1,4 @@
 import os
-import threading
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -19,8 +18,6 @@ class Engine:
         get_data_dir = os.path.join(parent_dir, 'do_analysis')
         data_dir = os.path.join(get_data_dir, 'output')
 
-        # self.with_winrates = pd.read_csv(os.path.join(data_dir, 'with_winrates.csv'), index_col=0)
-        # self.against_winrates = pd.read_csv(os.path.join(data_dir, 'against_winrates.csv'), index_col=0)
         
         with_wins = pd.read_csv(os.path.join(data_dir, 'with_wins.csv'), index_col=0)
         with_games = pd.read_csv(os.path.join(data_dir, 'with_games.csv'), index_col=0)
@@ -40,13 +37,18 @@ class Engine:
         winrates = winrates.fillna(0)
         
         winrates['Win Rates'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
-
-        # for i in range(len(self.with_winrates)):
-        #     self.against_winrates.iloc[i] = self.against_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
-        #     self.with_winrates.iloc[i] = self.with_winrates.iloc[i].fillna(self.winrates.iloc[i, 3])
     
         self.brawlers = winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
         
+    def get_brawlers(self):
+        return self.brawlers
+    
+    def get_with_winrates(self):
+        return self.with_winrates
+
+    def get_against_winrates(self):
+        return self.against_winrates
+    
     def evaluation(self, node):
         value = 0
 
@@ -57,9 +59,9 @@ class Engine:
         for i in range(len(node.team1)):
             for j in range(i+1, len(node.team2)):
                 value += self.with_winrates.loc[node.team1[i], node.team1[j]]
-                value += self.with_winrates.loc[node.team2[i], node.team2[j]]
+                value += (1 - self.with_winrates.loc[node.team2[i], node.team2[j]])
 
-        value = value / 9
+        value = value / 15
 
         return value
 
@@ -154,7 +156,6 @@ def main():
     node = Node()
 
     main_line, value = engine.get_main_line(node, 6)
-
     print(main_line, value)
 
 if __name__ == '__main__':
