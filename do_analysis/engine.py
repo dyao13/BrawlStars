@@ -24,7 +24,7 @@ class Engine:
         with_games = pd.read_csv(os.path.join(data_dir, 'with_games.csv'), index_col=0)
         against_wins = pd.read_csv(os.path.join(data_dir, 'against_wins.csv'), index_col=0)
         against_games = pd.read_csv(os.path.join(data_dir, 'against_games.csv'), index_col=0)
-        winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'))
+        winrates = pd.read_csv(os.path.join(data_dir, 'winrates.csv'), index_col=0)
 
         with_wins = with_wins.fillna(0)
         with_games = with_games.fillna(0)
@@ -32,17 +32,16 @@ class Engine:
         against_games = against_games.fillna(0)
         winrates = winrates.fillna(0)
 
-        winrates['Win Rates'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
+        winrates['Win Rate'] = (winrates['Wins'] + 1) / (winrates['Games'] + 2)
     
         self.data_dir = data_dir
 
         self.with_winrates = (with_wins + 1) / (with_games + 2)
         self.against_winrates = (against_wins + 1) / (against_games + 2)
 
-        self.winrates = winrates['Win Rates']
-        self.winrates.index = winrates['Name']
+        self.winrates = winrates['Win Rate']
 
-        self.brawlers = winrates.sort_values(by='Win Rates', ascending=False)['Name'].to_numpy()
+        self.brawlers = winrates.sort_values(by='Win Rate', ascending=False).index.to_numpy()
 
         if os.path.exists(os.path.join(data_dir, 'first_pick.txt')):
             self.first_pick = open(os.path.join(data_dir, 'first_pick.txt'), 'r').readline()
@@ -63,15 +62,56 @@ class Engine:
 
     def get_first_pick(self):
         return self.first_pick
+
+    def get_coefficients(self):
+        if os.path.exists(os.path.join(self.data_dir, 'coefficients.txt')):
+            parameters = open(os.path.join(self.data_dir, 'coefficients.txt'), 'r').readlines()
+            lambda1 = float(parameters[0])
+            lambda2 = float(parameters[1])
+            lambda3 = float(parameters[2])
+            
+            return lambda1, lambda2, lambda3
+    
+        return 1/3, 1/3, 1/3
     
     def evaluation(self, node):
         if len(node.team1) == 0:
             return -float('inf')
+
+        if len(node.team1) == 3 and len(node.team2) == 3:
+            value = 0
+
+            for brawler in node.team1:
+                value += self.winrates.loc[brawler]
+            
+            for brawler in node.team2:
+                value += 1 - self.winrates.loc[brawler]
+
+            for brawler1 in node.team1:
+                for brawler2 in node.team2:
+                    value += self.against_winrates.loc[brawler1, brawler2]
+            
+            for i in range(len(node.team1)):
+                for j in range(i+1, len(node.team1)):
+                    value += self.with_winrates.loc[node.team1[i], node.team1[j]]
+                    value += 1 - self.with_winrates.loc[node.team2[i], node.team2[j]]
+            
+            return value / 21
         
+        individual_value = 0
+        invividual_count = 0
         with_value = 0
         against_value = 0
         with_count = 0
         against_count = 0
+
+        for brawler in node.team1:
+            individual_value += self.winrates.loc[brawler]
+            invividual_count += 1
+        
+        for brawler in node.team2:
+            individual_value += 1 - self.winrates.loc[brawler]
+            invividual_count += 1
 
         for brawler1 in node.team1:
             for brawler2 in node.team2:
@@ -88,7 +128,7 @@ class Engine:
                     with_count += 1
         
         if len(node.team2) == 1:
-            with_value += self.winrates.loc[node.team2[0]]
+            with_value += 1 - self.winrates.loc[node.team2[0]]
             with_count += 1
         else:
             for i in range(len(node.team2)):
@@ -96,14 +136,11 @@ class Engine:
                     with_value += (1 - self.with_winrates.loc[node.team2[i], node.team2[j]])
                     with_count += 1
 
-        with_value = with_value / with_count
-
-        if against_count > 0:
-            against_value = against_value / against_count
-        else:
+        if against_count == 0:
             against_value = with_value
+            against_count = with_count
 
-        return (with_value + against_value) / 2
+        return (individual_value / invividual_count + with_value / with_count + against_value / against_count) / 3
 
     def minimax(self, node, depth, alpha, beta, max_depth):
         if depth == 0 or (len(node.team1) == 3 and len(node.team2) == 3):
@@ -226,7 +263,7 @@ def main():
     engine = Engine()
     node = Node()
 
-    main_line, value = engine.quick_run(node, 6)
+    main_line, value = engine.quick_run(node, 4)
 
     print(main_line)
     print(value)
