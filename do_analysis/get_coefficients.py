@@ -36,12 +36,19 @@ for row in tqdm(df.itertuples(index=False)):
     key = tuple(team1 + team2)
 
     if key not in matchups:
-        matchups[key] = (1, 2)
+        matchups[key] = (1, 1)
 
     if victor == 1:
         matchups[key] = (matchups[key][0] + 1, matchups[key][1])
     else:
         matchups[key] = (matchups[key][0], matchups[key][1] + 1)
+
+old_matchups = matchups.copy()
+matchups = {}
+
+for key in old_matchups:
+    if old_matchups[key][0] + old_matchups[key][1] > 4:
+        matchups[key] = old_matchups[key]
 
 keys = list(matchups.keys())
 keys.sort()
@@ -97,13 +104,10 @@ constraints = {'type': 'eq', 'fun': constraint_sum_to_one}
 
 result = minimize(objective, initial_guess, args=(X, y), bounds=bounds, constraints=constraints)
 
-
-
 with open(os.path.join(output_dir, 'coefficients.txt'), 'w') as f:
     f.write('\n'.join(map(str, result.x)))
 
-print(np.dot(X, result.x))
-error = np.mean(np.abs(y - np.dot(X, result.x)) / np.abs(y))
+error = np.mean(np.abs(y - np.dot(X, result.x)))
 
 print("Optimal coefficients:", result.x)
 print("Error:", error)
