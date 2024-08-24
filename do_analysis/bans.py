@@ -18,3 +18,4 @@ def main():
     obj = engine.Engine()
 
 if __name__ == '__main__':
+    main()
