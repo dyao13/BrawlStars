@@ -1,5 +1,4 @@
-# BrawlStars
-Brawl Stars Draft Engine
+![Masters Tier Logo](https://static.wikia.nocookie.net/brawlstars/images/8/87/Masters_Tier.png/revision/latest?cb=20240229130919)
 
 # Installation
 To install `BrawlStars`:
